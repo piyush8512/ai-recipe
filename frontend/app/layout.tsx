@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
-
+import { ClerkProvider } from "@clerk/nextjs";
+import { neobrutalism } from '@clerk/themes'
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
@@ -16,20 +17,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased`}>
-        <Header />
-        <main className="min-h-screen">{children}</main>
-        <footer className="flex h-24 w-full items-center justify-center border-t">
-          <div className="max-w-6xl mx-auto flex-col justify-center items-center gap-2">
-            <p className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} Ai Recipe Platform. All rights
-              reserved.
-            </p>
-            <p className="text-center">mAdE wITH ❤️ bY {"Piyush"}</p>
-          </div>
-        </footer>
-      </body>
-    </html>
+    <ClerkProvider  appearance={{
+    
+    signIn: { theme: neobrutalism },
+  }}>
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${inter.variable} antialiased`}>
+          <Header />
+          <main className="min-h-screen">{children}</main>
+          <footer className="flex h-24 w-full items-center justify-center border-t">
+            <div className="max-w-6xl mx-auto flex-col justify-center items-center gap-2">
+              <p className="text-sm text-gray-500">
+                &copy; {new Date().getFullYear()} Ai Recipe Platform. All rights
+                reserved.
+              </p>
+              <p className="text-center">mAdE wITH ❤️ bY {"Piyush"}</p>
+            </div>
+          </footer>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
