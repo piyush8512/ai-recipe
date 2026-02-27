@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import { ClerkProvider } from "@clerk/nextjs";
 import { neobrutalism } from '@clerk/themes'
+import { Toaster } from "@/components/ui/sonner";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({
         <body className={`${inter.variable} antialiased`}>
           <Header />
           <main className="min-h-screen">{children}</main>
+          <Toaster richColors/>
           <footer className="flex h-24 w-full items-center justify-center border-t">
             <div className="max-w-6xl mx-auto flex-col justify-center items-center gap-2">
               <p className="text-sm text-gray-500">
