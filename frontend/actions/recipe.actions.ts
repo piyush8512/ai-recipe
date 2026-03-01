@@ -17,6 +17,75 @@ function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
+function toBlocksDescription(description: unknown) {
+  if (typeof description !== "string") {
+    return [
+      {
+        type: "paragraph",
+        children: [{ type: "text", text: "" }],
+      },
+    ];
+  }
+
+  return [
+    {
+      type: "paragraph",
+      children: [{ type: "text", text: description }],
+    },
+  ];
+}
+
+function fromBlocksDescription(description: unknown) {
+  if (typeof description === "string") {
+    return description;
+  }
+
+  if (!Array.isArray(description)) {
+    return "";
+  }
+
+  const text = description
+    .map((block) => {
+      if (!block || typeof block !== "object" || !("children" in block)) {
+        return "";
+      }
+
+      const children = (block as { children?: unknown }).children;
+      if (!Array.isArray(children)) {
+        return "";
+      }
+
+      return children
+        .map((child) => {
+          if (!child || typeof child !== "object" || !("text" in child)) {
+            return "";
+          }
+
+          return String((child as { text?: unknown }).text ?? "");
+        })
+        .join("");
+    })
+    .filter(Boolean)
+    .join("\n\n");
+
+  return text;
+}
+
+function normalizeDbRecipe(recipe: Record<string, unknown>) {
+  const cuisine = String(recipe.cuisine ?? "other").replace(
+    "middle - eastern",
+    "middle-eastern",
+  );
+
+  return {
+    ...recipe,
+    description: fromBlocksDescription(recipe.description),
+    cuisine,
+    ingredients: recipe.indgredients ?? recipe.ingredients ?? [],
+    substitutions: recipe.substitions ?? recipe.substitutions ?? [],
+  };
+}
+
 // Helper function to normalize recipe title
 function normalizeTitle(title: string) {
   return title
@@ -127,7 +196,7 @@ export async function getOrGenerateRecipe(formData: FormData) {
 
         return {
           success: true,
-          recipe: searchData.data[0],
+          recipe: normalizeDbRecipe(searchData.data[0]),
           recipeId: searchData.data[0].id,
           isSaved: isSaved,
           fromDatabase: true,
@@ -264,14 +333,18 @@ Guidelines:
       "moroccan",
       "brazilian",
       "caribbean",
+      "middle - eastern",
       "middle-eastern",
       "british",
       "german",
       "portuguese",
       "other",
     ];
-    const cuisine = validCuisines.includes(recipeData.cuisine?.toLowerCase())
-      ? recipeData.cuisine.toLowerCase()
+    const normalizedCuisine = recipeData.cuisine
+      ?.toLowerCase()
+      ?.replace("middle-eastern", "middle - eastern");
+    const cuisine = validCuisines.includes(normalizedCuisine)
+      ? normalizedCuisine
       : "other";
 
     // Step 3: Fetch image from Unsplash
@@ -282,17 +355,17 @@ Guidelines:
     const strapiRecipeData = {
       data: {
         title: normalizedTitle,
-        description: recipeData.description,
+        description: toBlocksDescription(recipeData.description),
         cuisine,
         category,
-        ingredients: recipeData.ingredients,
+        indgredients: recipeData.ingredients,
         instructions: recipeData.instructions,
         prepTime: Number(recipeData.prepTime),
         cookTime: Number(recipeData.cookTime),
         servings: Number(recipeData.servings),
         nutrition: recipeData.nutrition,
         tips: recipeData.tips,
-        substitutions: recipeData.substitutions,
+        substitions: recipeData.substitutions,
         imageUrl: imageUrl || "",
         isPublic: true,
         author: user.id,
@@ -328,7 +401,7 @@ Guidelines:
         ...recipeData,
         title: normalizedTitle,
         category,
-        cuisine,
+        cuisine: cuisine.replace("middle - eastern", "middle-eastern"),
         imageUrl: imageUrl || "",
       },
       recipeId: createdRecipe.data.id,
@@ -340,7 +413,13 @@ Guidelines:
     };
   } catch (error) {
     console.error("❌ Error in getOrGenerateRecipe:", error);
-    throw new Error(getErrorMessage(error, "Failed to load recipe"));
+    const message = getErrorMessage(error, "Failed to load recipe");
+    if (message.includes("429") || message.toLowerCase().includes("quota")) {
+      throw new Error(
+        "AI quota reached for now. Please retry in a minute, or add a Gemini API key with available quota.",
+      );
+    }
+    throw new Error(message);
   }
 }
 

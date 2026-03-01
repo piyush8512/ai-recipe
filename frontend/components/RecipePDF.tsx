@@ -1,0 +1,111 @@
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+
+interface RecipeIngredient {
+  item: string;
+  amount: string;
+}
+
+interface RecipeInstruction {
+  step: number;
+  title: string;
+  instruction: string;
+}
+
+interface RecipePDFData {
+  title: string;
+  description: string;
+  cuisine: string;
+  category: string;
+  prepTime: string;
+  cookTime: string;
+  servings: string | number;
+  ingredients: RecipeIngredient[];
+  instructions: RecipeInstruction[];
+  tips?: string[];
+}
+
+interface RecipePDFProps {
+  recipe: RecipePDFData;
+}
+
+const styles = StyleSheet.create({
+  page: {
+    padding: 32,
+    fontSize: 11,
+    fontFamily: "Helvetica",
+  },
+  title: {
+    fontSize: 20,
+    marginBottom: 8,
+    fontWeight: "bold",
+  },
+  section: {
+    marginBottom: 16,
+  },
+  heading: {
+    fontSize: 14,
+    marginBottom: 6,
+    fontWeight: "bold",
+  },
+  text: {
+    marginBottom: 4,
+  },
+});
+
+export function RecipePDF({ recipe }: RecipePDFProps) {
+  const tips = recipe.tips ?? [];
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* Title */}
+        <Text style={styles.title}>{recipe.title}</Text>
+        <Text style={styles.text}>{recipe.description}</Text>
+
+        {/* Meta */}
+        <View style={styles.section}>
+          <Text>
+            Cuisine: {recipe.cuisine} | Category: {recipe.category}
+          </Text>
+          <Text>
+            Time: {parseInt(recipe.prepTime) + parseInt(recipe.cookTime)} mins
+          </Text>
+          <Text>Servings: {recipe.servings}</Text>
+        </View>
+
+        {/* Ingredients */}
+        <View style={styles.section}>
+          <Text style={styles.heading}>Ingredients</Text>
+          {recipe.ingredients.map((ing, i) => (
+            <Text key={i} style={styles.text}>
+              • {ing.item} – {ing.amount}
+            </Text>
+          ))}
+        </View>
+
+        {/* Instructions */}
+        <View style={styles.section}>
+          <Text style={styles.heading}>Instructions</Text>
+          {recipe.instructions.map((step) => (
+            <View key={step.step} style={{ marginBottom: 6 }}>
+              <Text>
+                {step.step}. {step.title}
+              </Text>
+              <Text>{step.instruction}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Tips */}
+        {tips.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.heading}>Chef’s Tips</Text>
+            {tips.map((tip, i) => (
+              <Text key={i}>• {tip}</Text>
+            ))}
+          </View>
+        )}
+      </Page>
+    </Document>
+  );
+}
