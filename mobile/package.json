@@ -1,0 +1,49 @@
+{
+  "name": "ai-recipe-mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@clerk/clerk-expo": "^2.15.1",
+    "@expo/vector-icons": "*",
+    "@google/generative-ai": "^0.24.1",
+    "@gorhom/bottom-sheet": "*",
+    "@shopify/flash-list": "*",
+    "expo": "~55.0.4",
+    "expo-auth-session": "*",
+    "expo-camera": "*",
+    "expo-constants": "*",
+    "expo-font": "*",
+    "expo-haptics": "*",
+    "expo-image-picker": "*",
+    "expo-linear-gradient": "~55.0.8",
+    "expo-linking": "*",
+    "expo-router": "*",
+    "expo-secure-store": "*",
+    "expo-splash-screen": "*",
+    "expo-status-bar": "~55.0.4",
+    "expo-system-ui": "*",
+    "expo-web-browser": "~55.0.9",
+    "lottie-react-native": "^7.3.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-gesture-handler": "*",
+    "react-native-reanimated": "4.2.1",
+    "react-native-safe-area-context": "*",
+    "react-native-screens": "*",
+    "react-native-svg": "*",
+    "react-native-worklets": "0.7.2",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}

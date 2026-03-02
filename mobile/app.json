@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "AI Recipe",
+    "slug": "ai-recipe",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "airecipe",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAF8"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.airecipe.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E85D04",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.airecipe.mobile",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      "expo-image-picker",
+      "expo-secure-store",
+      "expo-web-browser"
+    ]
+  }
+}
