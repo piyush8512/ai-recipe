@@ -1,4 +1,4 @@
-import { useSignIn } from "@clerk/clerk-expo";
+import { useOAuth, useSignIn } from "@clerk/clerk-expo";
 import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -11,15 +11,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Colors, FontSizes, Radius, Spacing } from "../../constants/theme";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const { isLoaded, signIn, setActive } = useSignIn();
+  const { startOAuthFlow } = useOAuth({ strategy: "oauth_google" });
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSignIn = async () => {
     if (!isLoaded) return;
@@ -39,6 +45,43 @@ export default function SignInScreen() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    if (!isLoaded) return;
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      const {
+        createdSessionId,
+        setActive: oauthSetActive,
+        signIn: oauthSignIn,
+      } = await startOAuthFlow();
+
+      if (createdSessionId) {
+        await (oauthSetActive ?? setActive)({ session: createdSessionId });
+        router.replace("/(tabs)");
+        return;
+      }
+
+      if (oauthSignIn?.status === "complete" && oauthSignIn.createdSessionId) {
+        await (oauthSetActive ?? setActive)({
+          session: oauthSignIn.createdSessionId,
+        });
+        router.replace("/(tabs)");
+        return;
+      }
+
+      setError("Google sign-in was cancelled or could not be completed.");
+    } catch (err: any) {
+      setError(
+        err?.errors?.[0]?.longMessage ||
+          "Google sign-in failed. Please try again.",
+      );
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -83,6 +126,39 @@ export default function SignInScreen() {
             <Text style={styles.buttonText}>Sign In</Text>
           )}
         </TouchableOpacity>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or sign in with</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <View style={styles.socialRow}>
+          <TouchableOpacity style={styles.socialButtonDisabled} disabled>
+            <FontAwesome name="apple" size={20} color={Colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.socialButton}
+            onPress={handleGoogleAuth}
+            activeOpacity={0.85}
+            disabled={googleLoading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <FontAwesome name="google" size={18} color={Colors.primary} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.socialButtonDisabled} disabled>
+            <FontAwesome name="facebook" size={18} color={Colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.socialHint}>
+          Google is enabled. Apple/Facebook coming soon.
+        </Text>
 
         <Text style={styles.footerText}>
           New here?{" "}
@@ -141,6 +217,53 @@ const styles = StyleSheet.create({
     color: Colors.textInverse,
     fontWeight: "700",
     fontSize: FontSizes.md,
+  },
+  dividerRow: {
+    marginTop: Spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    color: Colors.textMuted,
+    fontSize: FontSizes.sm,
+  },
+  socialRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.base,
+  },
+  socialButton: {
+    width: 46,
+    height: 46,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  socialButtonDisabled: {
+    width: 46,
+    height: 46,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: 0.5,
+  },
+  socialHint: {
+    textAlign: "center",
+    color: Colors.textMuted,
+    fontSize: FontSizes.xs,
   },
   footerText: {
     textAlign: "center",

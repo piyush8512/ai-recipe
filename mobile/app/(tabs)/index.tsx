@@ -1,6 +1,3 @@
-// ============================================
-// AI Recipe Mobile — Home Screen (Dashboard)
-// ============================================
 
 import React, { useEffect, useState } from "react";
 import {
@@ -13,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
   Dimensions,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -28,15 +26,19 @@ import {
 import { getCategoryEmoji, getCountryFlag } from "../../constants/data";
 import * as mealdbService from "../../services/mealdb.service";
 import { MealDBRecipe, MealDBCategory, MealDBArea } from "../../types/recipe";
+import { HomeHeader } from "@/components/home/Header";
 
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [recipeOfDay, setRecipeOfDay] = useState<MealDBRecipe | null>(null);
+  const [recipeOfDay, setRecipeOfDay] = useState<MealDBRecipe | null>();
   const [categories, setCategories] = useState<MealDBCategory[]>([]);
   const [areas, setAreas] = useState<MealDBArea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // New state for the Cuisine Modal
+  const [isCuisineModalVisible, setIsCuisineModalVisible] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -62,6 +64,8 @@ export default function HomeScreen() {
 
   const openMeals = async (mode: "category" | "cuisine", value: string) => {
     await Haptics.selectionAsync();
+    // Close modal if it's open before navigating
+    if (isCuisineModalVisible) setIsCuisineModalVisible(false);
     router.push({
       pathname: "/meals/[mode]/[value]",
       params: { mode, value },
@@ -77,6 +81,9 @@ export default function HomeScreen() {
     );
   }
 
+  // Get only top 7 areas for the horizontal list
+  const topCuisines = areas.slice(0, 7);
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
@@ -84,13 +91,38 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* ── Header ── */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>
-            Fresh Recipes,{"\n"}Served Daily 🔥
+        <HomeHeader
+          userName="Jenny"
+          onSearchChange={(text) => console.log(text)}
+          onFilterPress={() => {}}
+        />
+
+        {/* ── Browse by Category ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitleLarge}>Categories</Text>
+          <Text style={styles.sectionSubtitle}>
+            Find recipes that match your mood
           </Text>
-          <Text style={styles.headerSubtitle}>
-            Discover thousands of recipes from around the world.
-          </Text>
+
+          <FlatList
+            data={categories}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.strCategory}
+            contentContainerStyle={styles.categoryList}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.categoryCard}
+                activeOpacity={0.7}
+                onPress={() => openMeals("category", item.strCategory)}
+              >
+                <Text style={styles.categoryEmoji}>
+                  {getCategoryEmoji(item.strCategory)}
+                </Text>
+                <Text style={styles.categoryName}>{item.strCategory}</Text>
+              </TouchableOpacity>
+            )}
+          />
         </View>
 
         {/* ── Recipe of the Day ── */}
@@ -111,13 +143,11 @@ export default function HomeScreen() {
                 style={styles.heroImage}
               />
 
-              {/* Overlay badge */}
               <View style={styles.heroBadge}>
                 <Ionicons name="flame" size={12} color={Colors.primary} />
                 <Text style={styles.heroBadgeText}>TODAY'S SPECIAL</Text>
               </View>
 
-              {/* Content overlay */}
               <View style={styles.heroOverlay}>
                 <View style={styles.heroTags}>
                   {recipeOfDay.strCategory && (
@@ -162,58 +192,144 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ── Browse by Category ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitleLarge}>Browse by Category</Text>
-          <Text style={styles.sectionSubtitle}>
-            Find recipes that match your mood
-          </Text>
+        {/* ── Explore World Cuisines (Top Chefs Style) ── */}
+        <View style={[styles.section, styles.lastSection]}>
+          <View style={styles.sectionHeaderBetween}>
+            <Text style={styles.sectionTitleLarge}>Explore World Cuisines</Text>
+            <TouchableOpacity onPress={() => setIsCuisineModalVisible(true)}>
+              <Text style={styles.seeAllText}>See all</Text>
+            </TouchableOpacity>
+          </View>
 
           <FlatList
-            data={categories}
+            data={topCuisines}
             horizontal
             showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.strCategory}
-            contentContainerStyle={styles.categoryList}
+            keyExtractor={(item) => item.strArea}
+            contentContainerStyle={styles.cuisineHorizontalList}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.categoryCard}
+                style={styles.cuisineCircleCard}
                 activeOpacity={0.7}
-                onPress={() => openMeals("category", item.strCategory)}
+                onPress={() => openMeals("cuisine", item.strArea)}
               >
-                <Text style={styles.categoryEmoji}>
-                  {getCategoryEmoji(item.strCategory)}
+                <View style={styles.cuisineCircle}>
+                  <Text style={styles.cuisineFlagLarge}>
+                    {getCountryFlag(item.strArea)}
+                  </Text>
+                </View>
+                <Text style={styles.cuisineCircleName} numberOfLines={1}>
+                  {item.strArea}
                 </Text>
-                <Text style={styles.categoryName}>{item.strCategory}</Text>
               </TouchableOpacity>
             )}
           />
         </View>
 
-        {/* ── Explore World Cuisines ── */}
-        <View style={[styles.section, styles.lastSection]}>
-          <Text style={styles.sectionTitleLarge}>Explore World Cuisines</Text>
-          <Text style={styles.sectionSubtitle}>
-            Travel the globe through food
-          </Text>
+        {recipeOfDay && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="flame" size={22} color={Colors.primary} />
+              <Text style={styles.sectionTitle}>Popular</Text>
+            </View>
 
-          <View style={styles.cuisineGrid}>
-            {areas.map((area) => (
-              <TouchableOpacity
-                key={area.strArea}
-                style={styles.cuisineCard}
-                activeOpacity={0.7}
-                onPress={() => openMeals("cuisine", area.strArea)}
-              >
-                <Text style={styles.cuisineFlag}>
-                  {getCountryFlag(area.strArea)}
-                </Text>
-                <Text style={styles.cuisineName}>{area.strArea}</Text>
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+              style={styles.heroCard}
+              activeOpacity={0.9}
+              onPress={() => openRecipe(recipeOfDay.strMeal)}
+            >
+              <Image
+                source={{ uri: recipeOfDay.strMealThumb }}
+                style={styles.heroImage}
+              />
+
+              <View style={styles.heroBadge}>
+                <Ionicons name="flame" size={12} color={Colors.primary} />
+                <Text style={styles.heroBadgeText}>TODAY'S SPECIAL</Text>
+              </View>
+
+              <View style={styles.heroOverlay}>
+                <View style={styles.heroTags}>
+                  {recipeOfDay.strCategory && (
+                    <View style={styles.tag}>
+                      <Text style={styles.tagText}>
+                        {recipeOfDay.strCategory}
+                      </Text>
+                    </View>
+                  )}
+                  {recipeOfDay.strArea && (
+                    <View style={[styles.tag, styles.tagDark]}>
+                      <Ionicons
+                        name="globe-outline"
+                        size={12}
+                        color={Colors.text}
+                      />
+                      <Text style={[styles.tagText, styles.tagTextDark]}>
+                        {recipeOfDay.strArea}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <Text style={styles.heroTitle}>{recipeOfDay.strMeal}</Text>
+
+                {recipeOfDay.strInstructions && (
+                  <Text style={styles.heroDescription} numberOfLines={2}>
+                    {recipeOfDay.strInstructions.substring(0, 120)}...
+                  </Text>
+                )}
+
+                <View style={styles.heroButton}>
+                  <Text style={styles.heroButtonText}>Start Cooking</Text>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={18}
+                    color={Colors.textInverse}
+                  />
+                </View>
+              </View>
+            </TouchableOpacity>
           </View>
-        </View>
+        )}
       </ScrollView>
+
+      {/* ── See All Cuisines Modal ── */}
+      <Modal
+        visible={isCuisineModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsCuisineModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>All Cuisines</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setIsCuisineModalVisible(false)}
+            >
+              <Ionicons name="close" size={24} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            <View style={styles.cuisineGrid}>
+              {areas.map((area) => (
+                <TouchableOpacity
+                  key={area.strArea}
+                  style={styles.cuisineCard}
+                  activeOpacity={0.7}
+                  onPress={() => openMeals("cuisine", area.strArea)}
+                >
+                  <Text style={styles.cuisineFlag}>
+                    {getCountryFlag(area.strArea)}
+                  </Text>
+                  <Text style={styles.cuisineName}>{area.strArea}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -238,29 +354,10 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
-  // Header
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
-  },
-  headerTitle: {
-    fontSize: FontSizes["3xl"],
-    fontWeight: "800",
-    color: Colors.text,
-    lineHeight: 38,
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: FontSizes.md,
-    color: Colors.textSecondary,
-    marginTop: Spacing.sm,
-    fontWeight: "300",
-  },
-
   // Section
   section: {
     marginBottom: Spacing["2xl"],
+    marginTop: Spacing.xl,
   },
   lastSection: {
     marginBottom: Spacing["4xl"],
@@ -272,6 +369,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
   },
+  sectionHeaderBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
   sectionTitle: {
     fontSize: FontSizes.xl,
     fontWeight: "700",
@@ -280,8 +384,8 @@ const styles = StyleSheet.create({
   sectionTitleLarge: {
     fontSize: FontSizes["2xl"],
     fontWeight: "800",
-    color: Colors.text,
     paddingHorizontal: Spacing.lg,
+    color: Colors.text,
     letterSpacing: -0.3,
   },
   sectionSubtitle: {
@@ -291,6 +395,11 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     marginBottom: Spacing.base,
     fontWeight: "300",
+  },
+  seeAllText: {
+    fontSize: FontSizes.sm,
+    fontWeight: "600",
+    color: Colors.textMuted,
   },
 
   // Hero Card (Recipe of the Day)
@@ -394,10 +503,10 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   categoryCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.primaryLight,
     borderWidth: 1.5,
     borderColor: Colors.border,
-    borderRadius: Radius.md,
+    borderRadius: Radius.lg,
     paddingVertical: Spacing.base,
     paddingHorizontal: Spacing.lg,
     alignItems: "center",
@@ -415,7 +524,37 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
 
-  // Cuisines
+  // Explore Cuisines (Horizontal Circle List)
+  cuisineHorizontalList: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+  },
+  cuisineCircleCard: {
+    alignItems: "center",
+    width: 72,
+    gap: Spacing.sm,
+  },
+  cuisineCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: Colors.surfaceElevated, // Light gray color from image
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cuisineFlagLarge: {
+    fontSize: 32,
+  },
+  cuisineCircleName: {
+    fontSize: FontSizes.sm,
+    fontWeight: "600",
+    color: Colors.text,
+    textAlign: "center",
+  },
+
+  // Cuisines Grid (Used in Modal)
   cuisineGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -442,5 +581,34 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontWeight: "700",
     color: Colors.text,
+  },
+
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalTitle: {
+    fontSize: FontSizes.xl,
+    fontWeight: "800",
+    color: Colors.text,
+  },
+  modalCloseButton: {
+    padding: Spacing.xs,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.full,
+  },
+  modalScrollContent: {
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing["4xl"],
   },
 });

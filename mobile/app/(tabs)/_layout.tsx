@@ -8,7 +8,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Platform, StyleSheet, View } from "react-native";
 import { Colors, Fonts, Shadows } from "../../constants/theme";
 import { useAuth } from "@clerk/clerk-expo";
-import { CLERK_PUBLISHABLE_KEY } from "../../constants/config";
 
 function ProtectedTabs() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -49,18 +48,7 @@ function TabNavigator() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="camera"
-        options={{
-          title: "Scan",
-          tabBarIcon: ({ color, focused }) => (
-            <View style={styles.scanButton}>
-              <Ionicons name="camera" size={28} color={Colors.textInverse} />
-            </View>
-          ),
-          tabBarLabel: () => null,
-        }}
-      />
+
       <Tabs.Screen
         name="pantry"
         options={{
@@ -72,6 +60,18 @@ function TabNavigator() {
               color={color}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="camera"
+        options={{
+          title: "Scan",
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.scanButton}>
+              <Ionicons name="camera" size={28} color={Colors.textInverse} />
+            </View>
+          ),
+          tabBarLabel: () => null,
         }}
       />
       <Tabs.Screen
@@ -105,13 +105,7 @@ function TabNavigator() {
 }
 
 export default function TabLayout() {
-  const hasClerk = Boolean(CLERK_PUBLISHABLE_KEY);
-
-  if (hasClerk) {
-    return <ProtectedTabs />;
-  }
-
-  return <TabNavigator />;
+  return <ProtectedTabs />;
 }
 
 const styles = StyleSheet.create({
